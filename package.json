@@ -1,0 +1,13 @@
+{
+    "name": "cass-analysis",
+    "version": "0.0.1",
+    "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
+    "synopsis": "Libraries with various compile-time analysis for Curry",
+    "category": [ "Analysis" ],
+    "dependencies": {
+    },
+    "source": {
+        "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/cass-analysis.git",
+        "tag": "$version"
+    }
+}
