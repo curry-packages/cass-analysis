@@ -23,6 +23,7 @@ import Char(isDigit)
 import FlatCurry.Types
 import FlatCurry.Goodies
 import List
+import SCC(scc)
 import Sort(sort)
 
 ------------------------------------------------------------------------------
@@ -54,10 +55,14 @@ isTerminating (Func qfunc _ _ _ rule) calledFuncs = hasTermRule rule
   hasTermExp _ (Lit _)    = True
   hasTermExp _ (Free _ _) = False -- could be improved if the domain is finite
   hasTermExp args (Let bs e) =
-    let brexps = map snd bs
-    in if any (`elem` concatMap allVars brexps) (map fst bs)
+    -- compute strongly connected components of local let declarationss
+    -- in order to check for recursive lets
+    let sccs   = scc ((:[]) . fst) (allVars . snd) bs
+    in if any (\scc -> any (`elem` concatMap allVars (map snd scc))
+                           (map fst scc))
+              sccs
          then False -- non-terminating due to recursive let
-         else all (hasTermExp args) (e : brexps)
+         else all (hasTermExp args) (e : map snd bs)
   hasTermExp args (Or e1 e2) =
     hasTermExp args e1 && hasTermExp args e2
   hasTermExp args (Case _ e bs) =
@@ -154,8 +159,12 @@ isProductive terminfo (Func qf _ _ _ rule) calledFuncs = hasProdRule rule
   hasProdExp bc (Free _ e) = -- could be improved for finite domains:
     lubProd (DCalls []) (hasProdExp bc e)
   hasProdExp bc (Let bs e) =
-    let brexps = map snd bs
-    in if any (`elem` concatMap allVars brexps) (map fst bs)
+    -- compute strongly connected components of local let declarationss
+    -- in order to check for recursive lets
+    let sccs   = scc ((:[]) . fst) (allVars . snd) bs
+    in if any (\scc -> any (`elem` concatMap allVars (map snd scc))
+                           (map fst scc))
+              sccs
          then Looping -- improve: check for variable occs under constructors
          else foldr lubProd (hasProdExp bc e)
                     (map (\ (_,be) -> hasProdExp bc be) bs)
