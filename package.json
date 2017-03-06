@@ -1,6 +1,6 @@
 {
     "name": "cass-analysis",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "Libraries with various compile-time analyses for Curry",
     "category": [ "Analysis" ],

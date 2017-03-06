@@ -173,23 +173,27 @@ isProductive terminfo (Func qf _ _ _ rule) calledFuncs = hasProdRule rule
     foldr lubProd (hasProdExp bc e)
           (map (\ (Branch _ be) -> hasProdExp bc be) bs)
   hasProdExp bc (Typed e _) = hasProdExp bc e
-  hasProdExp bc (Comb ct qg es) =
-    let cprodargs = foldr lubProd NoInfo (map (hasProdExp True) es)
-        fprodargs = foldr lubProd NoInfo (map (hasProdExp bc  ) es) in
-    case ct of
-      ConsCall       -> cprodargs
-      ConsPartCall _ -> cprodargs
-      _ -> let prodinfo =
-                 if fprodargs <= Terminating
-                 then if maybe False id (lookupProgInfo qg terminfo)
-                        then Terminating
-                        else lubProd (DCalls [qg])
-                                     (maybe Looping id (lookup qg calledFuncs))
-                 else Looping -- worst case assumption, could be improved...
-           in if not bc
-                then prodinfo
-                else case prodinfo of
-                       DCalls _ -> DCalls []
-                       _        -> prodinfo
+  hasProdExp bc (Comb ct qg es) = case ct of
+    ConsCall       -> cprodargs
+    ConsPartCall _ -> cprodargs
+    FuncCall       -> if qg == ("Prelude","?")
+                        then fprodargs -- equivalent to Or
+                        else funCallInfo
+    FuncPartCall _ -> funCallInfo
+   where
+    cprodargs = foldr lubProd NoInfo (map (hasProdExp True) es)
+    fprodargs = foldr lubProd NoInfo (map (hasProdExp bc  ) es)
+
+    funCallInfo =
+      let prodinfo = if fprodargs <= Terminating
+                     then if maybe False id (lookupProgInfo qg terminfo)
+                            then Terminating
+                            else lubProd (DCalls [qg])
+                                   (maybe Looping id (lookup qg calledFuncs))
+                     else Looping -- worst case assumption, could be improved...
+      in if not bc then prodinfo
+                   else case prodinfo of
+                          DCalls _ -> DCalls []
+                          _        -> prodinfo
 
 ------------------------------------------------------------------------------
