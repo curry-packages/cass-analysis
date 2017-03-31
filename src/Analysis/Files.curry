@@ -40,14 +40,14 @@ getAnalysisPublicFile :: String -> String -> IO String
 getAnalysisPublicFile modname ananame = do
   getAnalysisBaseFile modname ananame >>= return . (<.> "pub")
 
--- Directory where analysis info files are stored in subdirectory `.curry`.
--- Usually, it is $HOME.
+-- Cache directory where analysis info files are stored.
+-- If $HOME exists, it is ~/.curryanalysis_cache
 getAnalysisDirectory :: IO String
 getAnalysisDirectory = do
   homedir <- getHomeDirectory
   hashomedir <- doesDirectoryExist homedir
   let cassStoreDir = if hashomedir then homedir else installDir
-  return $ cassStoreDir </> ".curry" </> "Analysis"
+  return $ cassStoreDir </> ".curryanalysis_cache"
 
 -- loads analysis results for a list of modules
 getInterfaceInfos :: String -> [String] -> IO (ProgInfo a)
