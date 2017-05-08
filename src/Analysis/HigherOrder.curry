@@ -13,6 +13,7 @@ import Maybe
 
 -- datatype order: higher-order or first-order
 data Order = HO | FO
+  deriving Eq
 
 -- Show higher-order information as a string.
 showOrder :: AOutFormat -> Order -> String
