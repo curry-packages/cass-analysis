@@ -50,6 +50,7 @@ orderOfTypeExpr (TVar _) = FO
 orderOfTypeExpr (FuncType _ _) = HO
 orderOfTypeExpr (TCons _ typeExprs) =
   foldr hoOr FO (map orderOfTypeExpr typeExprs)
+orderOfTypeExpr (ForallType _ texp) = orderOfTypeExpr texp
 
 -----------------------------------------------------------------------
 -- higher-order constructor analysis
