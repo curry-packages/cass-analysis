@@ -12,7 +12,7 @@ module Analysis.Groundness
   ) where
 
 import FlatCurry.Types
-import List
+import Data.List
 
 import Analysis.Types
 import Analysis.ProgInfo
@@ -25,7 +25,7 @@ import Analysis.ProgInfo
 --- Definitely ground (G), maybe non-ground (A), or maybe non-ground
 --- if i-th argument is non-ground (P [...,i,...]).
 data Ground = G | A | P [Int]
- deriving Eq
+ deriving (Eq, Read, Show)
 
 -- Show groundness information as a string.
 showGround :: AOutFormat -> Ground -> String
@@ -118,7 +118,7 @@ groundApply (P ps) gargs =
 --- due to a narrowing step (second argument), or if i-th argument
 --- is non-ground (if i is a member of the third argument).
 data NDEffect = NDEffect Bool Bool [Int]
-  deriving Eq
+  deriving (Eq, Read, Show)
 
 noEffect :: NDEffect
 noEffect = NDEffect False False []

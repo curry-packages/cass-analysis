@@ -27,8 +27,8 @@ module Analysis.RootReplaced
 import Analysis.Types
 import Analysis.ProgInfo
 import FlatCurry.Types
-import List
-import Sort(sort)
+import Data.List
+import Sort              (sort)
 
 ------------------------------------------------------------------------------
 --- Data type to represent root replacement information.

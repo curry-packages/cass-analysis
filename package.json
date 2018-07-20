@@ -1,13 +1,13 @@
 {
     "name": "cass-analysis",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "Libraries with various compile-time analyses for Curry",
     "category": [ "Analysis" ],
     "license": "BSD-3-Clause",
     "licenseFile": "LICENSE",
     "dependencies": {
-        "flatcurry": ">= 2.0.0"
+        "flatcurry": ">= 3.0.0"
     },
     "compilerCompatibility": {
         "pakcs": ">= 2.0.0",

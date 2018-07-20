@@ -18,12 +18,12 @@ module Analysis.RequiredValues
 
 import Analysis.Types
 import Analysis.ProgInfo
-import Analysis.TotallyDefined(siblingCons)
+import Analysis.TotallyDefined (siblingCons)
 
 import FlatCurry.Types
 import FlatCurry.Goodies
-import List hiding (union,intersect)
-import Sort(mergeSortBy)
+import Data.List        hiding (union,intersect)
+import Sort                    (mergeSortBy)
 
 ------------------------------------------------------------------------------
 -- Our abstract (non-standard) type domain.
@@ -31,7 +31,7 @@ import Sort(mergeSortBy)
 -- `AnyC` represents any value (i.e., constructor-rooted term),
 -- `Cons cs` a value rooted by some of the constructor `cs`, and
 data AType = Cons [QName] | AnyC | Any
- deriving (Eq,Ord)
+ deriving (Eq, Ord, Read)
 
 instance Show AType where
   show AnyC = "AnyC"
@@ -87,7 +87,7 @@ showAType _ (Cons cs) = "{" ++ intercalate "," (map snd cs) ++ "}"
 --- the possible result of the function,
 --- or a list of possible argument/result type pairs.
 data AFType = EmptyFunc | AFType [([AType],AType)]
- deriving Eq
+ deriving (Eq, Show, Read)
 
 -- Shows an abstract value.
 showAFType :: AOutFormat -> AFType -> String
@@ -112,7 +112,7 @@ extendEnv :: AEnv -> [Int] -> AEnv
 extendEnv env vars = zip vars (repeat Any) ++ env
 
 --- Update a variable in an abstract environment:
-updateVarInEnv :: AEnv -> Int -> AType -> AEnv 
+updateVarInEnv :: AEnv -> Int -> AType -> AEnv
 updateVarInEnv [] v _ = error ("Variable "++show v++" not found in environment")
 updateVarInEnv ((i,ov):env) v nv =
   if i==v then (i,nv) : env

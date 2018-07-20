@@ -10,7 +10,7 @@ module Analysis.Logging
  ( getDebugLevel, setDebugLevel, debugMessage, debugString
  ) where
 
-import Global
+import Data.Global
 
 --------------------------------------------------------------------------
 --- Global variable to store the debug level.

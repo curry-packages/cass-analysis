@@ -18,12 +18,12 @@ module Analysis.RequiredValue
 
 import Analysis.Types
 import Analysis.ProgInfo
-import Analysis.TotallyDefined(siblingCons)
+import Analysis.TotallyDefined (siblingCons)
 
 import FlatCurry.Types
 import FlatCurry.Goodies
-import List
-import Sort(mergeSortBy)
+import Data.List
+import Sort                    (mergeSortBy)
 
 
 ------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ import Sort(mergeSortBy)
 -- `Cons c` a value rooted by the constructor `c`, and
 -- `Empty` represents no possible value.
 data AType = Any | AnyC | Cons QName | Empty
- deriving (Eq,Ord)
+ deriving (Eq, Ord, Read, Show)
 
 --- Is some abstract type a constructor?
 isConsValue :: AType -> Bool
@@ -82,7 +82,7 @@ showAType _ Empty = "_|_"
 --- the possible result of the function,
 --- or a list of possible argument/result type pairs.
 data AFType = EmptyFunc | AFType [([AType],AType)]
- deriving Eq
+ deriving (Eq, Show, Read)
 
 -- Shows an abstract value.
 showAFType :: AOutFormat -> AFType -> String
@@ -107,7 +107,7 @@ extendEnv :: AEnv -> [Int] -> AEnv
 extendEnv env vars = zip vars (repeat Any) ++ env
 
 --- Update a variable in an abstract environment:
-updateVarInEnv :: AEnv -> Int -> AType -> AEnv 
+updateVarInEnv :: AEnv -> Int -> AType -> AEnv
 updateVarInEnv [] v _ = error ("Variable "++show v++" not found in environment")
 updateVarInEnv ((i,ov):env) v nv =
   if i==v then (i,nv) : env
