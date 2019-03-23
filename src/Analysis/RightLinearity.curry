@@ -33,7 +33,7 @@ rlFunc func calledFuncs =
 showRightLinear :: AOutFormat -> Bool -> String
 showRightLinear _     True  = "right-linear"
 showRightLinear AText False = "not defined by right-linear rules"
-showRightLinear ANote False = ""
+showRightLinear ANote False = "" 
 
 ------------------------------------------------------------------------------
 -- The right-linearity analysis can also be applied to individual functions.

@@ -20,7 +20,7 @@ import Data.Maybe
 
 --- Datatype to represent sensible type information.
 data Sensible = NotSensible | PSensible | Sensible
-  deriving (Eq, Read, Show)
+  deriving Eq
 
 -- Show higher-order information as a string.
 showSensible :: AOutFormat -> Sensible -> String

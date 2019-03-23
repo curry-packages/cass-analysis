@@ -10,7 +10,8 @@ module Analysis.Logging
  ( getDebugLevel, setDebugLevel, debugMessage, debugString
  ) where
 
-import Data.Global
+import Control.Monad
+import Global
 
 --------------------------------------------------------------------------
 --- Global variable to store the debug level.

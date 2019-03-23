@@ -3,23 +3,25 @@
 --- persistently in files.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version March 2017
+--- @version December 2018
 --------------------------------------------------------------------------
 
 module Analysis.Files where
 
 import System.Directory
-import Distribution      ( installDir, lookupModuleSourceInLoadPath
-                         , stripCurrySuffix )
-import FlatCurry.Files
-import FlatCurry.Goodies (progImports)
-import FlatCurry.Types   (Prog, QName)
+import System.Distribution ( installDir )
 import System.FilePath
-import Data.List         (isPrefixOf, isSuffixOf)
-import ReadShowTerm      (readQTerm, showQTerm)
-import Data.Time         (ClockTime)
+import Data.List           ( isPrefixOf, isSuffixOf )
+import Data.Time           ( ClockTime )
+import Control.Monad       ( when, unless )
+import ReadShowTerm        ( readQTerm, showQTerm )
 
-import Analysis.Logging  (debugMessage)
+import FlatCurry.Files
+import FlatCurry.Goodies   ( progImports )
+import FlatCurry.Types     ( Prog, QName )
+import System.CurryPath    ( lookupModuleSourceInLoadPath, stripCurrySuffix )
+
+import Analysis.Logging    ( debugMessage )
 import Analysis.ProgInfo
 
 
@@ -50,10 +52,10 @@ getAnalysisDirectory = do
   return $ cassStoreDir </> ".curryanalysis_cache"
 
 -- loads analysis results for a list of modules
-getInterfaceInfos :: Read a => String -> [String] -> IO (ProgInfo a)
+getInterfaceInfos :: String -> [String] -> IO (ProgInfo a)
 getInterfaceInfos _ [] = return emptyProgInfo
 getInterfaceInfos anaName (mod:mods) =
-  do modInfo  <- loadPublicAnalysis anaName mod
+  do modInfo  <- loadPublicAnalysis anaName mod 
      modsInfo <- getInterfaceInfos anaName mods
      return (combineProgInfo modInfo modsInfo)
 
@@ -76,12 +78,12 @@ loadDefaultAnalysisValues anaName moduleName = do
     else return []
 
 --- Loads the currently stored analysis information for a module.
-loadCompleteAnalysis :: Read a => String -> String -> IO (ProgInfo a)
+loadCompleteAnalysis :: String -> String -> IO (ProgInfo _)
 loadCompleteAnalysis ananame mainModule =
   getAnalysisBaseFile mainModule ananame >>= readAnalysisFiles
 
 --- Reads analysis result from file for the public entities of a given module.
-loadPublicAnalysis :: Read a => String -> String -> IO (ProgInfo a)
+loadPublicAnalysis:: String -> String -> IO (ProgInfo a) 
 loadPublicAnalysis anaName moduleName = do
   getAnalysisPublicFile moduleName anaName >>= readAnalysisPublicFile
 
@@ -102,7 +104,7 @@ getImportModuleListFile modname = do
 
 --- Store an analysis results in a file and create directories if neccesssary.
 --- The first argument is the analysis name.
-storeAnalysisResult :: Show a => String -> String -> ProgInfo a -> IO ()
+storeAnalysisResult :: String -> String -> ProgInfo a -> IO ()
 storeAnalysisResult ananame moduleName result = do
    baseFileName <- getAnalysisBaseFile moduleName ananame
    createDirectoryR (dropFileName baseFileName)
@@ -111,11 +113,11 @@ storeAnalysisResult ananame moduleName result = do
 
 -- creates directory (and all needed root-directories) recursively
 createDirectoryR :: String -> IO ()
-createDirectoryR maindir =
+createDirectoryR maindir = 
   let (drv,dir) = splitDrive maindir
    in createDirectories drv (splitDirectories dir)
  where
-  createDirectories _ [] = done
+  createDirectories _ [] = return ()  
   createDirectories dirname (dir:dirs) = do
     let createdDir = dirname </> dir
     dirExists <- doesDirectoryExist createdDir
@@ -132,7 +134,7 @@ deleteAllAnalysisFiles ananame = do
  where
   deleteAllInDir dir = do
     dircont <- getDirectoryContents dir
-    mapIO_ processDirElem (filter (not . isPrefixOf ".") dircont)
+    mapM_ processDirElem (filter (not . isPrefixOf ".") dircont)
    where
      processDirElem f = do
        let fullname = dir </> f

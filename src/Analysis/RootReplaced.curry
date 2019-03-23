@@ -28,8 +28,6 @@ import Analysis.Types
 import Analysis.ProgInfo
 import FlatCurry.Types
 import Data.List
-import Sort              (sort)
-
 ------------------------------------------------------------------------------
 --- Data type to represent root replacement information.
 --- Basically, it is the set (represented as a sorted list) of
