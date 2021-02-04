@@ -25,7 +25,7 @@ import FlatCurry.Types
 unsafeModuleAnalysis :: Analysis [String]
 unsafeModuleAnalysis = dependencyModuleAnalysis "UnsafeModule" importsUnsafe
 
--- Show a list of type constructor names as a string.
+-- Show the information about unsafe modules as a string.
 showUnsafe :: AOutFormat -> [String] -> String
 showUnsafe _     []         = "safe"
 showUnsafe ANote (_:_)      = "unsafe"
