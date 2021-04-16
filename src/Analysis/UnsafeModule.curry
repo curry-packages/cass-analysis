@@ -3,13 +3,13 @@
 --- it imports directly or indirectly the module `Unsafe`.
 ---
 --- @author Michael Hanus
---- @version June 2018
+--- @version February 2021
 ------------------------------------------------------------------------
 
 module Analysis.UnsafeModule ( showUnsafe, unsafeModuleAnalysis )
  where
 
-import List              ( nub )
+import Data.List         ( isInfixOf, nub )
 
 import Analysis.Types
 import FlatCurry.Goodies ( progImports, progName )
@@ -25,19 +25,20 @@ import FlatCurry.Types
 unsafeModuleAnalysis :: Analysis [String]
 unsafeModuleAnalysis = dependencyModuleAnalysis "UnsafeModule" importsUnsafe
 
--- Show a list of type constructor names as a string.
+-- Show the information about unsafe modules as a string.
 showUnsafe :: AOutFormat -> [String] -> String
-showUnsafe _     []    = "safe"
-showUnsafe ANote (_:_) = "unsafe"
-showUnsafe AText [mod] = "unsafe (due to module " ++ mod ++ ")"
+showUnsafe _     []         = "safe"
+showUnsafe ANote (_:_)      = "unsafe"
+showUnsafe AText [mod]      = "unsafe (due to module " ++ mod ++ ")"
 showUnsafe AText ms@(_:_:_) = "unsafe (due to modules " ++ unwords ms ++ ")"
 
 -- Does the module import the module `Unsafe` or any other unsafe module?
 -- TODO: to be real safe, one also has to check external operations!
 importsUnsafe :: Prog -> [(String,[String])] -> [String]
 importsUnsafe prog impinfos =
-  let unsafemods = (if "Unsafe" `elem` progImports prog then [progName prog]
-                                                        else []) ++
+  let unsafemods = (if any ("Unsafe" `isInfixOf`) (progImports prog)
+                      then [progName prog]
+                      else []) ++
                    concatMap snd impinfos
   in nub unsafemods
 

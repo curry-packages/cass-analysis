@@ -29,6 +29,7 @@ module Analysis.Types
 import FlatCurry.Types   ( Prog, ConsDecl, FuncDecl, TypeDecl, QName )
 import FlatCurry.Goodies ( progImports )
 
+import Analysis.Logging  ( DLevel(..) )
 import Analysis.ProgInfo ( ProgInfo, combineProgInfo, lookupProgInfo )
 import Analysis.Files    ( getImports, loadCompleteAnalysis, getInterfaceInfos )
 
@@ -36,7 +37,7 @@ import Analysis.Files    ( getImports, loadCompleteAnalysis, getInterfaceInfos )
 --- generic analysis system. The datatype is abstract so that
 --- one has to use one of the constructor operations to create
 --- an analysis.
-data Analysis a = 
+data Analysis a =
    SimpleFuncAnalysis String (FuncDecl -> a)
  | SimpleTypeAnalysis String (TypeDecl -> a)
  | SimpleConstructorAnalysis String (ConsDecl -> TypeDecl -> a)
@@ -58,20 +59,20 @@ data Analysis a =
 --- some information from a given function declaration.
 simpleFuncAnalysis :: String -> (FuncDecl -> a) -> Analysis a
 simpleFuncAnalysis anaName anaFunc =
-  SimpleFuncAnalysis anaName anaFunc 
+  SimpleFuncAnalysis anaName anaFunc
 
 --- A simple analysis for types takes an operation that computes
 --- some information from a given type declaration.
 simpleTypeAnalysis :: String -> (TypeDecl -> a) -> Analysis a
 simpleTypeAnalysis anaName anaFunc =
-  SimpleTypeAnalysis anaName anaFunc 
+  SimpleTypeAnalysis anaName anaFunc
 
 --- A simple analysis for data constructors takes an operation that computes
 --- some information for a constructor declaration and its type declaration
 --- to which it belongs.
 simpleConstructorAnalysis :: String -> (ConsDecl -> TypeDecl -> a) -> Analysis a
 simpleConstructorAnalysis anaName anaFunc =
-  SimpleConstructorAnalysis anaName anaFunc 
+  SimpleConstructorAnalysis anaName anaFunc
 
 --- Construct a function analysis with dependencies.
 --- The analysis has a name, a start value (representing "no initial
@@ -102,36 +103,37 @@ dependencyTypeAnalysis anaName startval anaType =
 --- some information from a given function declaration
 --- and information provided by some base analysis.
 --- The base analysis is provided as the second argument.
-combinedSimpleFuncAnalysis :: String -> Analysis b
+combinedSimpleFuncAnalysis :: Read b => String -> Analysis b
                            -> (ProgInfo  b -> FuncDecl -> a) -> Analysis a
 combinedSimpleFuncAnalysis ananame baseAnalysis anaFunc =
   CombinedSimpleFuncAnalysis [analysisName baseAnalysis] ananame True
-                             (runWithBaseAnalysis baseAnalysis anaFunc)
+                             (runWithBaseAnalysis Quiet baseAnalysis anaFunc)
 
 --- A simple combined analysis for functions.
 --- The analysis is based on an operation that computes
 --- some information from a given function declaration
 --- and information provided by two base analyses.
 --- The base analyses are provided as the second and third argument.
-combined2SimpleFuncAnalysis :: String -> Analysis b -> Analysis c
+combined2SimpleFuncAnalysis :: (Read b, Read c)
+                  => String -> Analysis b -> Analysis c
                   -> (ProgInfo b -> ProgInfo c -> FuncDecl -> a) -> Analysis a
 combined2SimpleFuncAnalysis ananame baseAnalysisA baseAnalysisB anaFunc =
   CombinedSimpleFuncAnalysis
     [analysisName baseAnalysisA, analysisName baseAnalysisB]
     ananame
     True
-    (runWith2BaseAnalyses baseAnalysisA baseAnalysisB anaFunc)
+    (runWith2BaseAnalyses Quiet baseAnalysisA baseAnalysisB anaFunc)
 
 --- A simple combined analysis for types.
 --- The analysis is based on an operation that computes
 --- some information from a given type declaration
 --- and information provided by some base analysis.
 --- The base analysis is provided as the second argument.
-combinedSimpleTypeAnalysis :: String -> Analysis b
+combinedSimpleTypeAnalysis :: Read b => String -> Analysis b
                            -> (ProgInfo  b -> TypeDecl -> a) -> Analysis a
 combinedSimpleTypeAnalysis ananame baseAnalysis anaFunc =
   CombinedSimpleTypeAnalysis [analysisName baseAnalysis] ananame True
-                             (runWithBaseAnalysis baseAnalysis anaFunc)
+                             (runWithBaseAnalysis Quiet baseAnalysis anaFunc)
 
 --- A combined analysis for functions with dependencies.
 --- The analysis is based on an operation that computes
@@ -141,12 +143,12 @@ combinedSimpleTypeAnalysis ananame baseAnalysis anaFunc =
 --- The analysis will be performed by a fixpoint iteration
 --- starting with the given start value (fourth argument).
 --- The base analysis is provided as the second argument.
-combinedDependencyFuncAnalysis :: String -> Analysis b -> a
+combinedDependencyFuncAnalysis :: Read b => String -> Analysis b -> a
              -> (ProgInfo b -> FuncDecl -> [(QName,a)] -> a) -> Analysis a
 combinedDependencyFuncAnalysis ananame baseAnalysis startval anaFunc =
   CombinedDependencyFuncAnalysis
     [analysisName baseAnalysis] ananame True startval
-    (runWithBaseAnalysis baseAnalysis anaFunc)
+    (runWithBaseAnalysis Quiet baseAnalysis anaFunc)
 
 --- A combined analysis for types with dependencies.
 --- The analysis is based on an operation that computes
@@ -156,19 +158,19 @@ combinedDependencyFuncAnalysis ananame baseAnalysis startval anaFunc =
 --- The analysis will be performed by a fixpoint iteration
 --- starting with the given start value (fourth argument).
 --- The base analysis is provided as the second argument.
-combinedDependencyTypeAnalysis :: String -> Analysis b -> a
+combinedDependencyTypeAnalysis :: Read b => String -> Analysis b -> a
    -> (ProgInfo b -> TypeDecl -> [(QName,a)] -> a) -> Analysis a
 combinedDependencyTypeAnalysis ananame baseAnalysis startval anaType =
   CombinedDependencyTypeAnalysis
     [analysisName baseAnalysis] ananame True startval
-    (runWithBaseAnalysis baseAnalysis anaType)
+    (runWithBaseAnalysis Quiet baseAnalysis anaType)
 
 --- Construct a simple analysis for entire modules.
 --- The analysis has a name and takes an operation that computes
 --- some information from a given module.
 simpleModuleAnalysis :: String -> (Prog -> a) -> Analysis a
 simpleModuleAnalysis anaName anaFunc =
-  SimpleModuleAnalysis anaName anaFunc 
+  SimpleModuleAnalysis anaName anaFunc
 
 --- Construct a module analysis which uses analysis information on
 --- imported modules.
@@ -243,7 +245,7 @@ baseAnalysisNames ana = case ana of
 startValue :: Analysis a -> a
 startValue ana = case ana of
   DependencyFuncAnalysis _             startval _ -> startval
-  DependencyTypeAnalysis _             startval _ -> startval 
+  DependencyTypeAnalysis _             startval _ -> startval
   CombinedDependencyFuncAnalysis _ _ _ startval _ -> startval
   CombinedDependencyTypeAnalysis _ _ _ startval _ -> startval
   _ -> error "Internal error in Analysis.startValue"
@@ -261,30 +263,31 @@ data AOutFormat = AText | ANote
 -------------------------------------------------------------------------
 --- Loads the results of the base analysis and put it as the first
 --- argument of the main analysis operation which is returned.
-runWithBaseAnalysis :: Analysis a -> (ProgInfo a -> (input -> b)) -> String
-                    -> IO (input -> b)
-runWithBaseAnalysis baseAnalysis analysisFunction moduleName = do
-  importedModules <- getImports moduleName
+runWithBaseAnalysis :: Read a
+                    => DLevel -> Analysis a -> (ProgInfo a -> (input -> b))
+                    -> String -> IO (input -> b)
+runWithBaseAnalysis dl baseAnalysis analysisFunction moduleName = do
+  importedModules <- getImports dl moduleName
   let baseananame = analysisName baseAnalysis
-  impbaseinfos  <- getInterfaceInfos baseananame importedModules
-  mainbaseinfos <- loadCompleteAnalysis baseananame moduleName
+  impbaseinfos  <- getInterfaceInfos dl baseananame importedModules
+  mainbaseinfos <- loadCompleteAnalysis dl baseananame moduleName
   let baseinfos = combineProgInfo impbaseinfos mainbaseinfos
   return (analysisFunction baseinfos)
 
 --- Loads the results of the base analysis and put it as the first
 --- argument of the main analysis operation which is returned.
-runWith2BaseAnalyses :: Analysis a -> Analysis b
+runWith2BaseAnalyses :: (Read a, Read b)
+                     => DLevel -> Analysis a -> Analysis b
                      -> (ProgInfo a -> ProgInfo b -> (input -> c)) -> String
                      -> IO (input -> c)
-runWith2BaseAnalyses baseanaA baseanaB analysisFunction moduleName = do
-  importedModules <- getImports moduleName
+runWith2BaseAnalyses dl baseanaA baseanaB analysisFunction moduleName = do
+  importedModules <- getImports dl moduleName
   let baseananameA = analysisName baseanaA
       baseananameB = analysisName baseanaB
-  impbaseinfosA  <- getInterfaceInfos baseananameA importedModules
-  mainbaseinfosA <- loadCompleteAnalysis baseananameA moduleName
-  impbaseinfosB  <- getInterfaceInfos baseananameB importedModules
-  mainbaseinfosB <- loadCompleteAnalysis baseananameB moduleName
+  impbaseinfosA  <- getInterfaceInfos dl baseananameA importedModules
+  mainbaseinfosA <- loadCompleteAnalysis dl baseananameA moduleName
+  impbaseinfosB  <- getInterfaceInfos dl baseananameB importedModules
+  mainbaseinfosB <- loadCompleteAnalysis dl baseananameB moduleName
   let baseinfosA = combineProgInfo impbaseinfosA mainbaseinfosA
       baseinfosB = combineProgInfo impbaseinfosB mainbaseinfosB
   return (analysisFunction baseinfosA baseinfosB)
-

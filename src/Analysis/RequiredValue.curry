@@ -22,9 +22,7 @@ import Analysis.TotallyDefined(siblingCons)
 
 import FlatCurry.Types
 import FlatCurry.Goodies
-import List
-import Sort(mergeSortBy)
-
+import Data.List
 
 ------------------------------------------------------------------------------
 -- Our abstract (non-standard) type domain.
@@ -33,7 +31,7 @@ import Sort(mergeSortBy)
 -- `Cons c` a value rooted by the constructor `c`, and
 -- `Empty` represents no possible value.
 data AType = Any | AnyC | Cons QName | Empty
- deriving (Eq,Ord)
+ deriving (Eq, Ord, Show, Read)
 
 --- Is some abstract type a constructor?
 isConsValue :: AType -> Bool
@@ -82,7 +80,7 @@ showAType _ Empty = "_|_"
 --- the possible result of the function,
 --- or a list of possible argument/result type pairs.
 data AFType = EmptyFunc | AFType [([AType],AType)]
- deriving Eq
+  deriving (Read, Show, Eq, Ord)
 
 -- Shows an abstract value.
 showAFType :: AOutFormat -> AFType -> String
@@ -107,7 +105,7 @@ extendEnv :: AEnv -> [Int] -> AEnv
 extendEnv env vars = zip vars (repeat Any) ++ env
 
 --- Update a variable in an abstract environment:
-updateVarInEnv :: AEnv -> Int -> AType -> AEnv 
+updateVarInEnv :: AEnv -> Int -> AType -> AEnv
 updateVarInEnv [] v _ = error ("Variable "++show v++" not found in environment")
 updateVarInEnv ((i,ov):env) v nv =
   if i==v then (i,nv) : env
@@ -120,7 +118,7 @@ dropEnv n (env,rtype) = (drop n env, rtype)
 
 -- Sorts a list of environment/type pairs by the type.
 sortEnvTypes :: [(AEnv,AType)] -> [(AEnv,AType)]
-sortEnvTypes = mergeSortBy (\ (e1,t1) (e2,t2) -> (t1,e1) <= (t2,e2))
+sortEnvTypes = sortBy (\ (e1,t1) (e2,t2) -> (t1,e1) <= (t2,e2))
 
 ------------------------------------------------------------------------------
 --- The maximum number of different constructors considered for the

@@ -3,24 +3,26 @@
 --- persistently in files.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version December 2018
+--- @version April 2021
 --------------------------------------------------------------------------
 
 module Analysis.Files where
 
-import Directory
-import Distribution      ( installDir )
-import FilePath
-import List              ( isPrefixOf, isSuffixOf )
-import ReadShowTerm      ( readQTerm, showQTerm )
-import Time              ( ClockTime )
+import Curry.Compiler.Distribution ( curryCompiler, curryCompilerMajorVersion
+                                   , curryCompilerMinorVersion
+                                   , curryCompilerRevisionVersion, installDir )
+import System.Directory
+import System.FilePath
+import Data.List           ( intercalate, isPrefixOf, isSuffixOf )
+import Data.Time           ( ClockTime )
+import Control.Monad       ( when, unless )
 
 import FlatCurry.Files
-import FlatCurry.Goodies ( progImports )
-import FlatCurry.Types   ( Prog, QName )
-import System.CurryPath  ( lookupModuleSourceInLoadPath, stripCurrySuffix )
+import FlatCurry.Goodies   ( progImports )
+import FlatCurry.Types     ( Prog, QName )
+import System.CurryPath    ( lookupModuleSourceInLoadPath, stripCurrySuffix )
 
-import Analysis.Logging  ( debugMessage )
+import Analysis.Logging    ( DLevel, debugMessage )
 import Analysis.ProgInfo
 
 
@@ -48,14 +50,20 @@ getAnalysisDirectory = do
   homedir <- getHomeDirectory
   hashomedir <- doesDirectoryExist homedir
   let cassStoreDir = if hashomedir then homedir else installDir
-  return $ cassStoreDir </> ".curryanalysis_cache"
+  return $ cassStoreDir </> ".curryanalysis_cache" </> syspath
+ where
+  syspath = curryCompiler ++ "-" ++
+            intercalate "."
+              (map show [ curryCompilerMajorVersion
+                        , curryCompilerMinorVersion
+                        , curryCompilerRevisionVersion ])
 
 -- loads analysis results for a list of modules
-getInterfaceInfos :: String -> [String] -> IO (ProgInfo a)
-getInterfaceInfos _ [] = return emptyProgInfo
-getInterfaceInfos anaName (mod:mods) =
-  do modInfo  <- loadPublicAnalysis anaName mod 
-     modsInfo <- getInterfaceInfos anaName mods
+getInterfaceInfos :: Read a => DLevel -> String -> [String] -> IO (ProgInfo a)
+getInterfaceInfos _  _       [] = return emptyProgInfo
+getInterfaceInfos dl anaName (mod:mods) =
+  do modInfo  <- loadPublicAnalysis dl anaName mod
+     modsInfo <- getInterfaceInfos dl anaName mods
      return (combineProgInfo modInfo modsInfo)
 
 --- Gets the file name in which default analysis values different from
@@ -65,33 +73,34 @@ getInterfaceInfos anaName (mod:mods) =
 --- the first component of each pair is the name of the operation
 --- (it is assumed that this denotes an operation of the current module)
 --- and the second component is an analysis value.
-loadDefaultAnalysisValues :: String -> String -> IO [(QName,a)]
-loadDefaultAnalysisValues anaName moduleName = do
+loadDefaultAnalysisValues :: Read a => DLevel -> String -> String
+                          -> IO [(QName,a)]
+loadDefaultAnalysisValues dl anaName moduleName = do
   (_,fileName) <- findModuleSourceInLoadPath moduleName
   let defaultFileName = stripCurrySuffix fileName ++ ".defaults." ++ anaName
   fileExists <- doesFileExist defaultFileName
   if fileExists
-    then do debugMessage 3 ("Load default values from " ++ defaultFileName)
-            defaultValues <- readFile defaultFileName >>= return . readQTerm
+    then do debugMessage dl 3 ("Load default values from " ++ defaultFileName)
+            defaultValues <- readFile defaultFileName >>= return . read
             return (map (\ (f,a) -> ((moduleName,f),a)) defaultValues)
     else return []
 
 --- Loads the currently stored analysis information for a module.
-loadCompleteAnalysis :: String -> String -> IO (ProgInfo _)
-loadCompleteAnalysis ananame mainModule =
-  getAnalysisBaseFile mainModule ananame >>= readAnalysisFiles
+loadCompleteAnalysis :: Read a => DLevel -> String -> String -> IO (ProgInfo a)
+loadCompleteAnalysis dl ananame mainModule =
+  getAnalysisBaseFile mainModule ananame >>= readAnalysisFiles dl
 
 --- Reads analysis result from file for the public entities of a given module.
-loadPublicAnalysis:: String -> String -> IO (ProgInfo a) 
-loadPublicAnalysis anaName moduleName = do
-  getAnalysisPublicFile moduleName anaName >>= readAnalysisPublicFile
+loadPublicAnalysis::  Read a => DLevel -> String -> String -> IO (ProgInfo a)
+loadPublicAnalysis dl anaName moduleName = do
+  getAnalysisPublicFile moduleName anaName >>= readAnalysisPublicFile dl
 
 --- Store current import dependencies.
-storeImportModuleList :: String -> [String] -> IO ()
-storeImportModuleList modname modlist = do
+storeImportModuleList :: DLevel -> String -> [String] -> IO ()
+storeImportModuleList dl modname modlist = do
   importListFile <- getAnalysisBaseFile modname "IMPORTLIST"
-  createDirectoryR (dropFileName importListFile)
-  writeFile importListFile (showQTerm modlist)
+  createDirectoryR dl (dropFileName importListFile)
+  writeFile importListFile (show modlist)
 
 --- Gets the file containing import dependencies for a main module
 --- (if it exists).
@@ -103,25 +112,26 @@ getImportModuleListFile modname = do
 
 --- Store an analysis results in a file and create directories if neccesssary.
 --- The first argument is the analysis name.
-storeAnalysisResult :: String -> String -> ProgInfo a -> IO ()
-storeAnalysisResult ananame moduleName result = do
+storeAnalysisResult :: Show a => DLevel -> String -> String -> ProgInfo a
+                    -> IO ()
+storeAnalysisResult dl ananame moduleName result = do
    baseFileName <- getAnalysisBaseFile moduleName ananame
-   createDirectoryR (dropFileName baseFileName)
-   debugMessage 4 ("Analysis result: " ++ showProgInfo result)
-   writeAnalysisFiles baseFileName result
+   createDirectoryR dl (dropFileName baseFileName)
+   debugMessage dl 4 ("Analysis result: " ++ showProgInfo result)
+   writeAnalysisFiles dl baseFileName result
 
 -- creates directory (and all needed root-directories) recursively
-createDirectoryR :: String -> IO ()
-createDirectoryR maindir = 
+createDirectoryR :: DLevel -> String -> IO ()
+createDirectoryR dl maindir =
   let (drv,dir) = splitDrive maindir
    in createDirectories drv (splitDirectories dir)
  where
-  createDirectories _ [] = done  
+  createDirectories _ [] = return ()
   createDirectories dirname (dir:dirs) = do
     let createdDir = dirname </> dir
     dirExists <- doesDirectoryExist createdDir
     unless dirExists $ do
-      debugMessage 3 ("Creating directory '"++createdDir++"'...")
+      debugMessage dl 3 ("Creating directory '" ++ createdDir ++ "'...")
       createDirectory createdDir
     createDirectories createdDir dirs
 
@@ -133,7 +143,7 @@ deleteAllAnalysisFiles ananame = do
  where
   deleteAllInDir dir = do
     dircont <- getDirectoryContents dir
-    mapIO_ processDirElem (filter (not . isPrefixOf ".") dircont)
+    mapM_ processDirElem (filter (not . isPrefixOf ".") dircont)
    where
      processDirElem f = do
        let fullname = dir </> f
@@ -163,9 +173,9 @@ findModuleSourceInLoadPath modname =
         return
 
 --- Get the imports of a module.
-getImports :: String -> IO [String]
-getImports moduleName = do
-  debugMessage 3 ("Reading interface of module "++moduleName)
+getImports :: DLevel -> String -> IO [String]
+getImports dl moduleName = do
+  debugMessage dl 3 $ "Reading interface of module " ++ moduleName
   readNewestFlatCurryInt moduleName >>= return . progImports
 
 -- Get timestamp of a Curry source module file (together with the module name)

@@ -16,11 +16,11 @@ import Analysis.Types
 import Analysis.ProgInfo
 import FlatCurry.Types
 import FlatCurry.Goodies
-import Maybe
+import Data.Maybe
 
 --- Datatype to represent sensible type information.
 data Sensible = NotSensible | PSensible | Sensible
-  deriving Eq
+  deriving (Show, Read, Eq)
 
 -- Show higher-order information as a string.
 showSensible :: AOutFormat -> Sensible -> String
@@ -48,6 +48,8 @@ predefinedSensibles = [pre "Int", pre "Float", pre "Char", pre "IO"]
 
 sensOfType :: TypeDecl -> [(QName,Sensible)] -> Sensible
 sensOfType (TypeSyn _ _ _ typeExpr) usedtypes =
+  sensOfTypeExpr usedtypes typeExpr
+sensOfType (TypeNew _ _ _ (NewCons _ _ typeExpr)) usedtypes =
   sensOfTypeExpr usedtypes typeExpr
 sensOfType (Type tc _ _ conDecls) usedtypes
   | tc `elem` predefinedSensibles = Sensible

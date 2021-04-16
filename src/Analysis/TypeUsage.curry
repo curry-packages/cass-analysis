@@ -9,7 +9,7 @@ module Analysis.TypeUsage(showTypeNames,typesInValuesAnalysis) where
 
 import Analysis.Types
 import FlatCurry.Types
-import List(intercalate)
+import Data.List       (intercalate)
 
 ------------------------------------------------------------------------
 -- This analysis associates to each type the types which might occur
@@ -33,6 +33,9 @@ typesInTypeDecl (Type _ _ _ conDecls) usedtypes =
     foldr join [] $ map (typesInTypeExpr usedtypes) typeExprs
 
 typesInTypeDecl (TypeSyn _ _ _ typeExpr) usedtypes =
+  typesInTypeExpr usedtypes typeExpr
+
+typesInTypeDecl (TypeNew _ _ _ (NewCons _ _ typeExpr)) usedtypes =
   typesInTypeExpr usedtypes typeExpr
 
 

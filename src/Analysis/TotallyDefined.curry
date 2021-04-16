@@ -18,7 +18,7 @@ import Analysis.ProgInfo
 import Analysis.Types
 import FlatCurry.Types
 import FlatCurry.Goodies
-import List(delete)
+import Data.List         (delete)
 
 -----------------------------------------------------------------------
 --- An analysis to compute the sibling constructors (belonging to the
@@ -37,6 +37,7 @@ siblingCons = simpleConstructorAnalysis "SiblingCons" consNamesArOfType
     map (\cd -> (consName cd, consArity cd))
         (filter (\cd -> consName cd /= consName cdecl) consDecls)
   consNamesArOfType _ (TypeSyn _ _ _ _) = []
+  consNamesArOfType _ (TypeNew _ _ _ _) = []
 
 ------------------------------------------------------------------------------
 -- The completeness analysis assigns to an operation a flag indicating
@@ -48,7 +49,7 @@ data Completeness =
      Complete       -- completely defined
    | InComplete     -- incompletely defined
    | InCompleteOr   -- incompletely defined in each branch of an "Or"
- deriving Eq
+ deriving (Eq, Show, Read)
 
 --- A function is totally defined if it is pattern complete and depends
 --- only on totally defined functions.
@@ -136,4 +137,3 @@ combineAndResults Complete     InCompleteOr = InCompleteOr
 combineAndResults InCompleteOr Complete     = InCompleteOr
 combineAndResults InCompleteOr InComplete   = InComplete
 combineAndResults InCompleteOr InCompleteOr = InCompleteOr
-
