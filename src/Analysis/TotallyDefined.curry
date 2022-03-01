@@ -11,7 +11,7 @@
 
 module Analysis.TotallyDefined
   ( siblingCons, showSibling, Completeness(..), showComplete, showTotally
-  , patCompAnalysis, totalAnalysis
+  , patCompAnalysis, totalAnalysis, siblingConsAndDecl, showSiblingAndDecl
   ) where
 
 import Analysis.ProgInfo
@@ -38,6 +38,28 @@ siblingCons = simpleConstructorAnalysis "SiblingCons" consNamesArOfType
         (filter (\cd -> consName cd /= consName cdecl) consDecls)
   consNamesArOfType _ (TypeSyn _ _ _ _) = []
   consNamesArOfType _ (TypeNew _ _ _ _) = []
+
+-----------------------------------------------------------------------
+--- An analysis to compute the sibling constructors (belonging to the
+--- same data type) and type declaration for a data constructor.
+
+--- Shows the result of the sibling constructors analysis, i.e.,
+--- shows a tuple of a type declaration and a list of constructor
+--- names together with their arities.
+showSiblingAndDecl :: AOutFormat -> (TypeDecl, [(QName,Int)]) -> String
+showSiblingAndDecl _ = show
+
+siblingConsAndDecl :: Analysis (TypeDecl, [(QName,Int)])
+siblingConsAndDecl = simpleConstructorAnalysis "SiblingConsAndDecl" consNamesArOfType
+ where
+  -- get all constructor names and arities of a datatype declaration
+  consNamesArOfType cdecl t = (t, cs)
+    where cs = case t of
+            Type _ _ _ consDecls ->
+              map (\cd -> (consName cd, consArity cd))
+                (filter (\cd -> consName cd /= consName cdecl) consDecls)
+            TypeSyn _ _ _ _ -> []
+            TypeNew _ _ _ _ -> []
 
 ------------------------------------------------------------------------------
 -- The completeness analysis assigns to an operation a flag indicating
