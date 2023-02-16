@@ -1,9 +1,9 @@
 ------------------------------------------------------------------------------
 --- Nondeterminism analysis:
---- checks whether operations encapsulates or produces non-deterministic values
+--- checks whether operations encapsulate or produce non-deterministic values
 ---
 --- @author Michael Hanus
---- @version January 2023
+--- @version February 2023
 ------------------------------------------------------------------------------
 
 module Analysis.NondetOps ( nondetOperations, showNondet, Nondet(..) )
