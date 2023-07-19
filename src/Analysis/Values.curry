@@ -34,9 +34,9 @@ data AType = ACons [QName] | Any
 lit2cons :: Literal -> QName
 lit2cons l = ("", showLit l)
  where
-  showLit (Intc i) = show i
+  showLit (Intc i)   = show i
   showLit (Floatc x) = show x
-  showLit (Charc c) = show c
+  showLit (Charc c)  = show c
 
 --- Abstract representation of no possible value.
 emptyType :: AType
@@ -69,7 +69,7 @@ joinAType (ACons c) (ACons d) = ACons (intersect c d)
 
 -- Shows an abstract value.
 showAType :: AType -> String
-showAType Any       = "any"
+showAType Any        = "_"
 showAType (ACons cs) = "{" ++ intercalate "," (map snd cs) ++ "}"
 
 ------------------------------------------------------------------------------
