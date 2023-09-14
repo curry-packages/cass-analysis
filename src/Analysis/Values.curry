@@ -8,12 +8,13 @@
 --- about the outermost constructors.
 ---
 --- @author Michael Hanus
---- @version June 2023
+--- @version September 2023
 -----------------------------------------------------------------------------
 
 module Analysis.Values
-  ( AType(..), lit2cons, emptyType, aCons, mCons, anyType
-  , lubAType, joinAType, showAType, showResultValue, resultValueAnalysis)
+  ( AType(..), lit2cons, emptyType, aCons, anyType
+  , lubAType, joinAType, caseAType
+  , showAType, showResultValue, resultValueAnalysis)
  where
 
 import Data.List         hiding (union, intersect)
@@ -42,13 +43,9 @@ lit2cons l = ("", showLit l)
 emptyType :: AType
 emptyType = ACons []
 
---- Abstract representation of single-constructor type.
+--- Abstract representation of single constructor.
 aCons :: QName -> AType
 aCons qc = ACons [qc]
-
---- Abstract representation of multiple-constructor type.
-mCons :: [QName] -> AType
-mCons qcs = ACons qcs
 
 --- Abstract representation of the type of all values.
 anyType :: AType
@@ -66,6 +63,12 @@ joinAType :: AType -> AType -> AType
 joinAType Any       av        = av
 joinAType (ACons c) Any       = ACons c
 joinAType (ACons c) (ACons d) = ACons (intersect c d)
+
+--- Case distinction on the alternatives of an abstract types.
+caseAType :: ([QName] -> a) -> a -> AType -> a
+caseAType aconsfun anyval atype = case atype of
+  ACons cs -> aconsfun cs
+  Any      -> anyval
 
 -- Shows an abstract value.
 showAType :: AType -> String
