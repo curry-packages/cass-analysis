@@ -103,6 +103,7 @@ analyseResultValue (Func (m,f) _ _ _ rule) calledfuncs
   -- add special results for prelude functions here:
   preludeFuncs = [ ("failed", emptyType)
                  , ("error", emptyType)
+                 , ("prim_error", emptyType)
                  ]
 
   anaresult (External _)    = Any
