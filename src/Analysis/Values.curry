@@ -8,12 +8,12 @@
 --- about the outermost constructors.
 ---
 --- @author Michael Hanus
---- @version September 2023
+--- @version October 2023
 -----------------------------------------------------------------------------
 
 module Analysis.Values
-  ( AType(..), lit2cons, emptyType, aCons, anyType
-  , lubAType, joinAType, caseAType
+  ( AType(..), litAsCons, emptyType, aCons, anyType
+  , lubAType, joinAType
   , showAType, showResultValue, resultValueAnalysis)
  where
 
@@ -32,8 +32,8 @@ data AType = ACons [QName] | Any
  deriving (Eq, Show, Read)
 
 -- A literal `l` is represented as a constructor `("",l)`.
-lit2cons :: Literal -> QName
-lit2cons l = ("", showLit l)
+litAsCons :: Literal -> QName
+litAsCons l = ("", showLit l)
  where
   showLit (Intc i)   = show i
   showLit (Floatc x) = show x
@@ -63,12 +63,6 @@ joinAType :: AType -> AType -> AType
 joinAType Any       av        = av
 joinAType (ACons c) Any       = ACons c
 joinAType (ACons c) (ACons d) = ACons (intersect c d)
-
---- Case distinction on the alternatives of an abstract types.
-caseAType :: ([QName] -> a) -> a -> AType -> a
-caseAType aconsfun anyval atype = case atype of
-  ACons cs -> aconsfun cs
-  Any      -> anyval
 
 -- Shows an abstract value.
 showAType :: AType -> String
@@ -111,7 +105,7 @@ analyseResultValue (Func (m,f) _ _ _ rule) calledfuncs
 
   anaExpr args exp = case exp of
     Var v         -> maybe Any id (lookup v args)
-    Lit l         -> aCons $ lit2cons l
+    Lit l         -> aCons $ litAsCons l
     Comb ct qf es -> if ct == FuncCall
                        then if qf == (prelude,"?") && length es == 2
                               then anaExpr args (Or (es!!0) (es!!1))
