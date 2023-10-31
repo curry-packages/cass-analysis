@@ -22,11 +22,17 @@ import FlatCurry.Types
 --- The class `TermDomain` contains operations necessary to implement
 --- program analyses related to abstract domains approximating sets of
 --- data terms.
-class TermDomain a where
+--- The additional class contexts are required since abstract domains
+--- have to be stored, read and compared for equality in fixpoint operations.
+class (Read a, Show a, Eq a) => TermDomain a where
   --- Abstract representation of no possible value.
   emptyType :: a
+  --- Does an abstract type represent no value?
+  isEmptyType :: a -> Bool
   --- Abstract representation of the type of all values.
   anyType :: a
+  --- Does an abstract type represent any value?
+  isAnyType :: a -> Bool
   --- The representation of a constructor application to a list of
   --- abstract argument types.
   aCons :: QName -> [a] -> a
@@ -65,6 +71,14 @@ litAsCons l = ("", showLit l)
 data AType = ACons [QName] | AAny
  deriving (Eq, Show, Read)
 
+isEmptyAType :: AType -> Bool
+isEmptyAType AAny       = False
+isEmptyAType (ACons cs) = null cs
+
+isAnyAType :: AType -> Bool
+isAnyAType AAny      = True
+isAnyAType (ACons _) = False
+
 --- Least upper bound of abstract values.
 lubAType :: AType -> AType -> AType
 lubAType AAny       _         = AAny
@@ -100,7 +114,9 @@ showAType (ACons cs) = "{" ++ intercalate "," (map snd cs) ++ "}"
 --- The `AType` instance of `TermDomain`.
 instance TermDomain AType where
   emptyType             = ACons []
+  isEmptyType           = isEmptyAType
   anyType               = AAny
+  isAnyType             = isAnyAType
   aCons qc _            = ACons [qc]
   aLit l                = aCons (litAsCons l) []
   consOfType AAny       = []
@@ -131,9 +147,17 @@ cutDType d (DCons cs)
 emptyDType :: DType
 emptyDType = DCons []
 
+isEmptyDType :: DType -> Bool
+isEmptyDType DAny       = False
+isEmptyDType (DCons cs) = null cs
+
 --- Abstract representation of the type of all values.
 anyDType :: DType
 anyDType = DAny
+
+isAnyDType :: DType -> Bool
+isAnyDType DAny      = True
+isAnyDType (DCons _) = False
 
 --- Abstract representation of single constructor with abstract arguments.
 --- The first argument is the depth bound of the terms.
@@ -210,11 +234,13 @@ data DType2 = DT2 DType
  deriving (Eq, Show, Read)
 
 instance TermDomain DType2 where
-  emptyType      = DT2 emptyDType
-  anyType        = DT2 anyDType
-  aCons qc ts    = DT2 (dCons 2 qc (map (\ (DT2 t) -> t) ts))
-  aLit l         = DT2 (dCons 2 (litAsCons l) [])
-  consOfType (DT2 t) = consOfDType t
+  emptyType           = DT2 emptyDType
+  isEmptyType (DT2 t) = isEmptyDType t
+  anyType             = DT2 anyDType
+  isAnyType (DT2 t)   = isAnyDType t
+  aCons qc ts         = DT2 (dCons 2 qc (map (\ (DT2 t) -> t) ts))
+  aLit l              = DT2 (dCons 2 (litAsCons l) [])
+  consOfType (DT2 t)  = consOfDType t
   argTypesOfCons qn i (DT2 t) = map DT2 (argDTypesOfCons qn i t)
   lubType  (DT2 t1) (DT2 t2) = DT2 (lubDType t1 t2)
   joinType (DT2 t1) (DT2 t2) = DT2 (joinDType t1 t2)
@@ -225,11 +251,13 @@ data DType5 = DT5 DType
  deriving (Eq, Show, Read)
 
 instance TermDomain DType5 where
-  emptyType      = DT5 emptyDType
-  anyType        = DT5 anyDType
-  aCons qc ts    = DT5 (dCons 5 qc (map (\ (DT5 t) -> t) ts))
-  aLit l         = DT5 (dCons 5 (litAsCons l) [])
-  consOfType (DT5 t) = consOfDType t
+  emptyType           = DT5 emptyDType
+  isEmptyType (DT5 t) = isEmptyDType t
+  anyType             = DT5 anyDType
+  isAnyType (DT5 t)   = isAnyDType t
+  aCons qc ts         = DT5 (dCons 5 qc (map (\ (DT5 t) -> t) ts))
+  aLit l              = DT5 (dCons 5 (litAsCons l) [])
+  consOfType (DT5 t)  = consOfDType t
   argTypesOfCons qn i (DT5 t) = map DT5 (argDTypesOfCons qn i t)
   lubType  (DT5 t1) (DT5 t2) = DT5 (lubDType t1 t2)
   joinType (DT5 t1) (DT5 t2) = DT5 (joinDType t1 t2)
