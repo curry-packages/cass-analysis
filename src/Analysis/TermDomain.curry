@@ -6,7 +6,7 @@
 --- and domains of depth-bounded constructor terms.
 ---
 --- @author Michael Hanus
---- @version June 2024
+--- @version July 2024
 ------------------------------------------------------------------------------
 
 module Analysis.TermDomain
@@ -268,6 +268,7 @@ instance TermDomain DType5 where
 ------------------------------------------------------------------------------
 -- Testing:
 
+{-
 pre :: String -> QName
 pre n = ("Prelude",n)
 
@@ -289,6 +290,7 @@ lub'test1 = lubDType aTrue aTrue -=- aTrue
 lub'test2 = lubDType aTrue aFalse -=- aFalseTrue
 join'test1 = joinDType aJustTrue aJustFalse -=- emptyDType
 join'test2 = joinDType aJustTrue aJustTrue  -=- aJustTrue
+-}
 
 ------------------------------------------------------------------------------
 --- Definition of ReadWrite instance for compact data representation.
