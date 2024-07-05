@@ -96,8 +96,8 @@ readAnalysisFiles dl basefname = do
   debugMessage dl 3 $ "Reading analysis files '" ++ basefname ++ "'..."
   let pubcontfile  = basefname <.> "pub"
       privcontfile = basefname <.> "priv"
-  pubinfo  <- readTermFile dl pubcontfile
-  privinfo <- readTermFile dl privcontfile
+  pubinfo  <- readTermFile (fromEnum dl > 2) pubcontfile
+  privinfo <- readTermFile (fromEnum dl > 2) privcontfile
   let pinfo = ProgInfo pubinfo privinfo
   catch (return $!! pinfo)
         (\err -> do
@@ -112,7 +112,7 @@ readAnalysisPublicFile :: (Read a, ReadWrite a) => DLevel -> String
                        -> IO (ProgInfo a)
 readAnalysisPublicFile dl fname = do
   debugMessage dl 3 $ "Reading public analysis file '" ++ fname ++ "'..."
-  pubinfo <- readTermFile dl fname
+  pubinfo <- readTermFile (fromEnum dl > 2) fname
   let pinfo = ProgInfo pubinfo empty
   catch (return $!! pinfo)
         (\err -> do
@@ -133,11 +133,11 @@ writeTermFile _ fname x = do
 --- Reads data in term representation from a file.
 --- Try to read compact representation if it exists and
 --- is not older than the term file.
-readTermFile :: (ReadWrite a, Read a) => DLevel -> String -> IO a
-readTermFile dl fname = do
+--- If the first argument is `True`, read also the term file and report
+--- the timings of reading this file and the compact data file.
+readTermFile :: (ReadWrite a, Read a) => Bool -> String -> IO a
+readTermFile reporttimings fname = do
   let rwfile = fname <.> "rw"
-      norwmsg  = debugMessage dl 1 $ "Compact data file\n " ++ rwfile ++
-                   "\nnot present or up-to-date. Reading standard term file."
       readtermfile = fmap read (readFile fname)
   rwex <- doesFileExist rwfile
   if rwex
@@ -145,12 +145,12 @@ readTermFile dl fname = do
       ftime   <- getModificationTime fname
       rwftime <- getModificationTime rwfile
       if compareClockTime rwftime ftime == LT
-        then norwmsg >> readtermfile
+        then readtermfile
         else do
           (mbterms,rwtime) <- getElapsedTimeNF (readDataFile rwfile)
           maybe (error $ "Illegal data in file " ++ rwfile)
                 (\rwterms ->
-                  if fromEnum dl < 3
+                  if not reporttimings
                     then return rwterms
                     else do
                       putStrLn $ "\nReading " ++ fname
@@ -161,7 +161,7 @@ readTermFile dl fname = do
                                show (fromInt ttime / fromInt rwtime)
                       return rwterms )
                 mbterms
-    else norwmsg >> readtermfile
+    else readtermfile
 
 ------------------------------------------------------------------------------
 --- `ReadWrite` instance of `Map`.
