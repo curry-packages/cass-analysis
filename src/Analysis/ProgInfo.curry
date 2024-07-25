@@ -4,6 +4,7 @@
 --- @author Heiko Hoffmann, Michael Hanus
 --- @version July 2024
 -----------------------------------------------------------------------
+{-# OPTIONS_FRONTEND -Wno-incomplete-patterns #-}
 
 module Analysis.ProgInfo
   ( ProgInfo, emptyProgInfo, lookupProgInfo, combineProgInfo
@@ -15,7 +16,7 @@ module Analysis.ProgInfo
 
 import Prelude hiding   ( empty, lookup )
 
-import Debug.Profile
+import Debug.Profile    ( getElapsedTimeNF )
 import Data.Map
 import Data.Time        ( compareClockTime )
 import FlatCurry.Types
@@ -23,7 +24,6 @@ import RW.Base
 import System.Directory ( doesFileExist, getModificationTime, removeFile )
 import System.FilePath  ( (<.>) )
 import System.IO        ( hPutChar )
-import XML
 
 import Analysis.Logging ( DLevel, debugMessage )
 
@@ -166,7 +166,7 @@ readTermFile reporttimings fname = do
 ------------------------------------------------------------------------------
 --- `ReadWrite` instance of `Map`.
 instance (ReadWrite a,ReadWrite b) => ReadWrite (Map a b) where
-  readRW strs ('0' : r0) = (Tip,r0)
+  readRW _    ('0' : r0) = (Tip,r0)
   readRW strs ('1' : r0) = (Bin a' b' c' d' e',r5)
     where
       (a',r1) = readRW strs r0
@@ -175,7 +175,7 @@ instance (ReadWrite a,ReadWrite b) => ReadWrite (Map a b) where
       (d',r4) = readRW strs r3
       (e',r5) = readRW strs r4
 
-  showRW params strs0 Tip = (strs0,showChar '0')
+  showRW _      strs0 Tip = (strs0,showChar '0')
   showRW params strs0 (Bin a' b' c' d' e') =
     (strs5,showChar '1' . (show1 . (show2 . (show3 . (show4 . show5)))))
     where
