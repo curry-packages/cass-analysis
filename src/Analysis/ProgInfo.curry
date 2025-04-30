@@ -2,13 +2,13 @@
 --- This module defines a datatype to represent the analysis information.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version January 2025
+--- @version April 2025
 -----------------------------------------------------------------------
 {-# OPTIONS_FRONTEND -Wno-incomplete-patterns #-}
 
 module Analysis.ProgInfo
   ( ProgInfo, emptyProgInfo, lookupProgInfo, combineProgInfo
-  , lists2ProgInfo, publicListFromProgInfo, progInfo2Lists
+  , lists2ProgInfo, publicMap2ProgInfo, publicListFromProgInfo, progInfo2Lists
   , mapProgInfo, publicProgInfo
   , showProgInfo, equalProgInfo
   , readAnalysisFiles, readAnalysisPublicFile, readAnalysisPrivateFile, readAnalysisFile
@@ -52,6 +52,10 @@ combineProgInfo (ProgInfo x1 x2) (ProgInfo y1 y2) =
 lists2ProgInfo :: ([(QName,a)],[(QName,a)]) -> ProgInfo a
 lists2ProgInfo (xs,ys) = ProgInfo (fromList xs) (fromList ys)
 
+--- Converts a map of public analysis infos into a program info.
+publicMap2ProgInfo :: Map QName a -> ProgInfo a
+publicMap2ProgInfo pinfomap = ProgInfo pinfomap empty
+
 --- Returns the infos of public operations as a list.
 publicListFromProgInfo:: ProgInfo a -> [(QName,a)]
 publicListFromProgInfo (ProgInfo fm1 _) = toList fm1
@@ -88,7 +92,7 @@ writeAnalysisFiles :: (ReadWrite a, Show a) => DLevel -> String -> ProgInfo a
 writeAnalysisFiles dl basefname (ProgInfo pub priv) = do
   debugMessage dl 3 $ "Writing analysis files '" ++ basefname ++ "'..."
   writeTermFile dl (basefname <.> "priv") priv
-  writeTermFile dl (basefname <.> "pub" )  pub
+  writeTermFile dl (basefname <.> "pub" ) pub
 
 --- Reads a ProgInfo from the analysis files where the base file name is given.
 readAnalysisFiles :: (Read a, ReadWrite a) => DLevel -> String
