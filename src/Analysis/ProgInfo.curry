@@ -24,7 +24,7 @@ import FlatCurry.Types
 import RW.Base
 import System.Directory ( doesFileExist, getModificationTime, removeFile )
 import System.FilePath  ( (<.>) )
-import System.IO        ( hPutChar )
+import System.IO        ( IOMode(..), hGetContents, hPutChar, openFile )
 
 import Analysis.Logging ( DLevel, debugMessage )
 
@@ -163,7 +163,7 @@ writeTermFile _ fname x = do
 readTermFile :: (ReadWrite a, Read a) => Bool -> String -> IO a
 readTermFile reporttimings fname = do
   let rwfile = fname <.> "rw"
-      readtermfile = fmap read (readFile fname)
+      readtermfile = fmap read (openFile fname ReadMode >>= hGetContents)
   rwex <- doesFileExist rwfile
   if rwex
     then do

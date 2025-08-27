@@ -25,7 +25,7 @@ import Analysis.Types
 import Analysis.ProgInfo
 
 ------------------------------------------------------------------------------
---- An abstract environments used in the analysis of a function associates
+--- An abstract environment used in the analysis of a function associates
 --- to each variable (index) an abstract type.
 type AEnv atype = [(Int,atype)]
 
