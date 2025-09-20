@@ -42,8 +42,8 @@ showIndet ANote False = ""
 
 -- Check a function declaration for occurrences of indeterministic operations.
 hasIndetRules :: FuncDecl -> Bool
-hasIndetRules (Func _ _ _ _ (Rule _ e))   = indetInExpr e
-hasIndetRules (Func _ _ _ _ (External _)) = False
+hasIndetRules (Func _  _ _ _ (Rule _ e))   = indetInExpr e
+hasIndetRules (Func qn _ _ _ (External _)) = isIndetFunction qn
 
 -- Check an expression for occurrences of indeterministic operations.
 indetInExpr :: Expr -> Bool
