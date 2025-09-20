@@ -1,14 +1,14 @@
 ------------------------------------------------------------------------------
---- Indeterminism analysis:
---- check whether functions are indeterministic, i.e., might deliver
---- different results for different runs of a program.
---- This could be the case if there are explicit or implicit calls
---- to indeterministic encapsulation operation
---- (e.g. `Control.Search.SetFunctions.select`) or operations from the module
---- `System.IO.Unsafe`.
----
---- @author Michael Hanus
---- @version February 2025
+-- | Author : Michael Hanus
+--   Version: September 2025
+--
+-- Indeterminism analysis:
+-- check whether functions are indeterministic, i.e., might deliver
+-- different results for different runs of a program.
+-- This could be the case if there are explicit or implicit calls
+-- to indeterministic encapsulation operation
+-- (e.g. `Control.Search.SetFunctions.select`) or operations from the module
+-- `System.IO.Unsafe`.
 ------------------------------------------------------------------------------
 
 module Analysis.Indeterministic ( indetAnalysis, showIndet ) where
@@ -17,16 +17,16 @@ import Analysis.Types
 import FlatCurry.Types
 
 ------------------------------------------------------------------------------
---- The indeterminism analysis is a global function dependency analysis.
---- It assigns to a function a flag which is True if this function
---- might be indeterministic (i.e., calls directly or indirectly
---- some indeterministic operation.
+-- | The indeterminism analysis is a global function dependency analysis.
+--   It assigns to a function a flag which is True if this function
+--   might be indeterministic (i.e., calls directly or indirectly
+--   some indeterministic operation.
 
 indetAnalysis :: Analysis Bool
 indetAnalysis = dependencyFuncAnalysis "Indeterministic" False indetFunc
 
---- An operation is indeterministic if it calls directly or indirectly
---- some indeterministic operation.
+-- | An operation is indeterministic if it calls directly or indirectly
+--   some indeterministic operation.
 indetFunc  :: FuncDecl -> [(QName,Bool)] -> Bool
 indetFunc func calledFuncs =
   hasIndetRules func || any snd calledFuncs
